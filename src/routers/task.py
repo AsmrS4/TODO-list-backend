@@ -1,93 +1,105 @@
-from typing import Annotated
-
+from datetime import date
+from typing import Annotated, Sequence
 from fastapi import Depends, HTTPException, APIRouter
-from sqlmodel import Session
-
-from ..entities.task import TaskEntity
-from ..models.task import Task
-from ..tools import uuid_generator
-from ..utils.database import get_db_session
+from sqlalchemy.orm import Session
+from starlette.responses import JSONResponse
+from src.utils.database import Base, engine, get_db_session
+from src.entities.task import TaskEntity
+from src.models.task import Task
+from src.tools.uuid_generator import uuid_generator
+from src.tools.date_generator import date_generator
 
 router = APIRouter(
-    prefix="/api/tasks",
-    tags=["tasks"],
+    prefix="/api/task",
+    tags=["task"],
     responses={404: {"description": "Not found"}}
 )
 
+Base.metadata.create_all(bind=engine)
+
+
 db_session = Annotated[Session, Depends(get_db_session)]
-uuid = Annotated[str, Depends(uuid_generator)]
+get_uuid = Annotated[str, Depends(uuid_generator)]
+get_date = Annotated[date, Depends(date_generator)]
 
 
-async def get_all_tasks():
-    pass
+@router.get("/")
+async def get_all_tasks(
+        db: db_session,
+) -> Sequence[TaskEntity]:
+
+    result = db.query(Task).all()
+    if not result:
+        raise HTTPException(status_code=404, detail="Tasks not found")
+    return result
 
 
+@router.post("/new")
 async def create_new_task(
-        new_task: TaskEntity,
-        db_session: Session,
-        uuid: str
-):
-    task = Task(id=uuid, text=new_task.text, datetime=new_task.created_at)
-    db_session.add(task)
-    db_session.commit()
-    db_session.refresh(task)
+        db: db_session,
+        uuid: get_uuid,
+        date_today: get_date,
+        text: str | None = None
+
+) -> str:
+    task = Task(id=uuid, text=text, created_at=date_today)
+    db.add(task)
+    db.commit()
+    db.refresh(task)
     return task.id
 
 
+@router.delete("/delete/{task_id}")
 async def delete_task(
-        task_id: str,
-        db_session: Session
+        db: db_session,
+        task_id: str
 ):
-    task = db_session.query(Task).filter(Task.id == task_id).first()
+    task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    db_session.delete(task)
-    db_session.commit()
+    db.delete(task)
+    db.commit()
 
-    return {
+    return JSONResponse({
         "message": "Task with id " + task_id + " deleted successfully"
-    }
+    })
 
 
+@router.put("/edit/{task_id}")
 async def edit_task(
+        db: db_session,
         task_id: str,
-        db_session: Session,
-        text: str
-):
-    task = db_session.query(Task).filter(Task.id == task_id).first()
+        text: str | None = None
+) -> JSONResponse:
+    task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    task.text=text
-    db_session.commit()
-    db_session.refresh(task)
+    task.text = text
+    db.commit()
+    db.refresh(task)
 
-    return {
+    return JSONResponse({
         "message": "Task description with id " + task_id + " updated successfully"
-    }
+    })
 
 
+@router.post("/{task_id}/status")
 async def update_task_status(
+        db: db_session,
         task_id: str,
-        completed: bool,
-        db_session: Session
-):
-    task = db_session.query(Task).filter(Task.id == task_id).first()
+        completed: bool
+) -> str:
+    task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
     task.completed = completed
-    db_session.commit()
-    db_session.refresh(task)
+    db.commit()
+    db.refresh(task)
 
-    return {
+    return JSONResponse({
         "message": "Task status with id " + task_id + " updated successfully",
         "status": task.completed
-    }
-
-
-async def load_tasks(
-        db_session: Session
-):
-    pass
+    })

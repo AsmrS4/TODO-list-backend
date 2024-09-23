@@ -1,8 +1,9 @@
-from fastapi import Fastapi
+from fastapi import FastAPI
 
-app = Fastapi()
+from src.routers import task as router_task
 
-@app.get("/")
-async def test():
-    print("HelloWorld!")
+
+app = FastAPI()
+
+app.include_router(router_task.router)
 
