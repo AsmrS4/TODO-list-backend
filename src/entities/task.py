@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 
@@ -8,3 +8,7 @@ class TaskEntity(BaseModel):
     text: Optional[str] = None
     completed: Optional[bool] = None
     created_at: Optional[date] = None
+
+
+class TaskList(BaseModel):
+    tasks: Optional[List[TaskEntity]] = None

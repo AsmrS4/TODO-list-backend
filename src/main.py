@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-
 from src.routers import task as router_task
 
 

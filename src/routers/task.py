@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Annotated, Sequence
+from typing import Annotated, Sequence, List
 from fastapi import Depends, HTTPException, APIRouter
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
@@ -17,7 +17,6 @@ router = APIRouter(
 
 Base.metadata.create_all(bind=engine)
 
-
 db_session = Annotated[Session, Depends(get_db_session)]
 get_uuid = Annotated[str, Depends(uuid_generator)]
 get_date = Annotated[date, Depends(date_generator)]
@@ -26,8 +25,7 @@ get_date = Annotated[date, Depends(date_generator)]
 @router.get("/")
 async def get_all_tasks(
         db: db_session,
-) -> Sequence[TaskEntity]:
-
+) -> List[TaskEntity]:
     result = db.query(Task).all()
     if not result:
         raise HTTPException(status_code=404, detail="Tasks not found")
@@ -102,4 +100,31 @@ async def update_task_status(
     return JSONResponse({
         "message": "Task status with id " + task_id + " updated successfully",
         "status": task.completed
+    })
+
+
+@router.post("/tasks")
+async def load_tasks(
+        db: db_session,
+        tasks: List[TaskEntity]
+):
+    for task in tasks:
+        result = db.query(Task).filter(Task.id == task.id).first()
+        if result:
+            raise HTTPException(
+                status_code=422,
+                detail="Task with id " + task.id + " already exists"
+            )
+        db_task = Task(
+            id=task.id,
+            text=task.text,
+            completed=task.completed,
+            created_at=task.created_at
+        )
+        db.add(db_task)
+        db.commit()
+
+
+    return JSONResponse({
+        "message": "Tasks loaded successfully"
     })
