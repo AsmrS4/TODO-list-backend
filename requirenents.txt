@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standart]
+sqlmodel
+sqlalchemy
+psycopg2-binary
