@@ -26,7 +26,3 @@ E
 src/tools/__init__.py,c\2\c20843c8b09e861eb93c6e0ab5a3f3c0e8657aed
 ?
 src/__init__.py,b\1\b141e8a708cfc0de96ab25c59ca83087cbddf7fa
-K
-src/tools/date_generator.py,7\8\78f24013a18883822350e829cba5ffd1372623ed
-L
-src/tools/uuid_validation.py,c\7\c77a9c5cc59d04155cd88d088032b583916ddf28
