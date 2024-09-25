@@ -1,5 +1,6 @@
 from typing import Annotated, List
 from fastapi import Depends, HTTPException, APIRouter
+from sqlalchemy.sql import text
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from src.utils.database import Base, engine, get_db_session
@@ -25,8 +26,6 @@ async def get_all_tasks(
         db: db_session,
 ) -> List[TaskEntity]:
     result = db.query(Task).all()
-    if not result:
-        raise HTTPException(status_code=404, detail="Tasks not found")
     return result
 
 
@@ -108,9 +107,13 @@ async def load_tasks(
         db: db_session,
         tasks: List[TaskEntity]
 ):
+    db.execute(text('DELETE FROM tasks'))
+    db.commit()
     for task in tasks:
         result = db.query(Task).filter(Task.id == task.id).first()
         if result:
+            db.execute(text('DELETE FROM tasks'))
+            db.commit()
             raise HTTPException(
                 status_code=422,
                 detail="Task with id " + task.id + " already exists"
