@@ -24,8 +24,25 @@ get_uuid = Annotated[str, Depends(uuid_generator)]
 @router.get("/")
 async def get_all_tasks(
         db: db_session,
+        sorting: str | None = None,
+        completed: bool | None = None,
 ) -> List[TaskEntity]:
-    result = db.query(Task).all()
+    query = 'SELECT * FROM tasks'
+    if completed is not None:
+        query += ' WHERE completed = ' + str(completed)
+    if sorting is not None:
+        if sorting == 'asc':
+            query += ' ORDER BY created_at ASC'
+        elif sorting == 'desc':
+            query += ' ORDER BY created_at DESC'
+        else:
+            raise HTTPException(
+                status_code=422,
+                detail="Invalid sorting parameter"
+            )
+
+    result = db.execute(text(query)).all()
+
     return result
 
 

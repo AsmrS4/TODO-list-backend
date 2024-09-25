@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 from sqlalchemy import Boolean, Column, String, DateTime
 from ..utils.database import Base
@@ -10,4 +11,3 @@ class Task(Base):
     text = Column(String(255), default="")
     completed = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.now())
-
